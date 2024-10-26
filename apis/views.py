@@ -1,13 +1,24 @@
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
+# Views, viewsets e generics da aplicação apis
+from rest_framework import viewsets, generics
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from .permissions import CreateSuperUserPermission
+# 
 from organizations.models import Donation, OrganizationProfile, UserRole
 from users.models import Profile
 from invitations.models import Invitation
-from .serializers import DonationSerializer, OrganizationProfileDetailSerializer, OrganizationProfileBasicSerializer, ProfileSerializer, InvitationSerializer, OrganizationUsersSerializer, UserRoleSerializer
+from users.models import CustomUser
+from rest_framework.permissions import AllowAny
+# Serializers
+from .serializers.donations_serializer import DonationSerializer
+from .serializers.organization_profile_serializers import OrganizationProfileSerializer, OrganizationLocationSerializer
+from .serializers.users_serializers import OrganizationUsersSerializer, RegisterSerializer
+from .serializers.roles_serializers import UserRoleSerializer, RolesFromOrganizationSerializer
+from .serializers.invitations_serializer import InvitationSerializer
+from .serializers.profile_serializers import ProfileSerializer
+
 # from django.shortcuts import get_object_or_404
-# from .permissions import CreateSuperUserPermission
 
 class DonationsViewSet(viewsets.ModelViewSet):
     queryset = Donation.objects.all()
@@ -16,27 +27,21 @@ class DonationsViewSet(viewsets.ModelViewSet):
     # permission_classes = [CreateSuperUserPermission]
 
     def get_queryset(self):
-        queryset = Donation.objects.all()
-
-        # Filters
-        organization_id = self.request.query_params.get('organization_id')
-        user_email = self.request.query_params.get('user_email')
-
-        if organization_id is not None:
-            queryset = queryset.filter(organization__id=organization_id)
-        if user_email is not None:
-            queryset = queryset.filter(user__email=f'{user_email}')
-        
-        return queryset
+        return Donation.objects.all()
+    
+    @action(detail=False, methods=['get'])
+    def user(self, request):
+        user = self.request.query_params.get('email') or request.user.username
+        donations = Donation.objects.filter(user__username=user)
+        serializer = self.get_serializer(donations, many=True)
+        return Response(serializer.data)
 
 class OrganizationViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     # Define o serializer padrão para as outras operações
     def get_serializer_class(self):
-        if 'details' in self.action:
-            return OrganizationProfileDetailSerializer
-        return OrganizationProfileBasicSerializer
+        return OrganizationProfileSerializer
 
     def get_queryset(self):
         return OrganizationProfile.objects.all()
@@ -65,30 +70,55 @@ class OrganizationViewSet(viewsets.ModelViewSet):
     
     # Resgatar todos os usuários da organização
     @action(detail=True, methods=['get'])
-    def users(self, request, pk=None):
+    def all_users(self, request, pk=None):
         organization = OrganizationProfile.objects.get(pk=pk)
         users = organization.organization.users.all()
         serializer = OrganizationUsersSerializer(users, many=True)
         return Response(serializer.data)
     
-class UserViewSet(viewsets.ModelViewSet):
+    # Resgatar a localização das organizações
+    @action(detail=False, methods=['get'])
+    def location(self, request):
+        organization = OrganizationProfile.objects.all()
+        serializer = OrganizationLocationSerializer(organization, many=True)
+        return Response(serializer.data)
+    
+    # Resgatar as doações da organização
+    @action(detail=True, methods=['get'])
+    def donations(self, request, pk=None):
+        organization = OrganizationProfile.objects.get(pk=pk)
+        donations = Donation.objects.filter(organization=organization.organization)
+        serializer = DonationSerializer(donations, many=True)
+        return Response(serializer.data)
+    
+    # Resgatar os usuários e as funções de cada usuário
+    @action(detail=True, methods=['get'])
+    def roles(self, request, pk=None):
+        organization = OrganizationProfile.objects.get(pk=pk)
+        roles = UserRole.objects.filter(organization=organization.organization)
+        serializer = RolesFromOrganizationSerializer(roles, many=True)
+        return Response(serializer.data)
+
+class ProfileViewSet(viewsets.ModelViewSet):
     serializer_class = ProfileSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = Profile.objects.all()
-
-        # Filters
-        email = self.request.query_params.get('email')
-
-        if email is not None:
-            queryset = queryset.filter(email=f'{email}')
         
         return queryset
+    
+    @action(detail=False, methods=['get'])
+    def user(self, request):
+        user = self.request.query_params.get('email') or request.user.username
+        profile = Profile.objects.get(user__username=user)
+        serializer = self.get_serializer(profile)
+        return Response(serializer.data)
 
+# Melhorar
 class NotificationsViewSet(viewsets.ModelViewSet):
     serializer_class = InvitationSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = Invitation.objects.all()
@@ -98,9 +128,10 @@ class NotificationsViewSet(viewsets.ModelViewSet):
         queryset = queryset.filter(invited_user=user)
         return queryset
 
+# Melhorar
 class UserRoleViewSet(viewsets.ModelViewSet):
     serializer_class = UserRoleSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
 
@@ -119,3 +150,9 @@ class UserRoleViewSet(viewsets.ModelViewSet):
         user_roles = UserRole.objects.filter(user=user)
         serializer = self.get_serializer(user_roles, many=True)
         return Response(serializer.data)
+
+
+class RegisterView(generics.CreateAPIView):
+    queryset = CustomUser.objects.all()
+    permission_classes = (AllowAny,)
+    serializer_class = RegisterSerializer
