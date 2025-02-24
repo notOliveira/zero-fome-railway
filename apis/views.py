@@ -206,9 +206,20 @@ class UserRoleViewSet(viewsets.ModelViewSet):
 
     # Melhorar filtro
     def get_queryset(self):
-
         user = self.request.user
         return UserRole.objects.filter(user=user)
+    
+    @action(detail=False, methods=['get'])
+    def all(self, request):
+        user = request.user
+
+        if not user.is_superuser:
+            return Response({'detail': 'Você não tem permissão para visualizar as informações.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        roles = UserRole.objects.all()
+        serializer = self.get_serializer(roles, many=True)
+        
+        return Response(serializer.data)
     
     # Resgatar o papel do usuário em uma organização
     @action(detail=True, methods=['get'], url_path='role')
