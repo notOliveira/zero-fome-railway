@@ -5,24 +5,22 @@
 
 {% block content %}
 
-        <section class="news-section py-5">
-            <div class="container">
-                <h1 class="text-center">Organizações próximas</h1>
-            </div>
-        </section>
+<section class="news-section py-5">
+    <div class="container">
+        <h1 class="text-center">Organizações próximas</h1>
+    </div>
+</section>
 
-        <section class="py-5 section-bg">
-            <div class="container">
-                <div class="row">
-                    {% comment %} MAP {% endcomment %}
-                    <div id="map"></div>
-                    
-                </div>
-            </div>
-        </section>
-   
+<section class="py-5 section-bg">
+    <div class="container">
+        <div class="row">
+            <div id="map"></div>
+        </div>
+    </div>
+</section>
+
 {% endblock content %}
 
 {% block links %}
-     {% include "main/map.html" with locations=organizations %}
+    {% include "main/map.html" with locations=organizations %}
 {% endblock links %}
