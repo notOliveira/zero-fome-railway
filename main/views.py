@@ -47,10 +47,9 @@ def near_you(request):
     
     # Faço uma lista com as informações de todas as organizações, para que elas sejam inseridas no mapa de organizações próximas
     organizations_list = list(organizations.values_list('organization__name', 'organization__lat', 'organization__lng', 'organization__id', 'image'))
-    organizations_list = [[item for item in sublist] for sublist in organizations_list]   
+    organizations_list = [[item for item in sublist] for sublist in organizations_list] 
     
     context = {
-        'key': settings.GOOGLE_API_KEY,
         'organizations': organizations_list
     }
     return render(request, 'main/near-you.html', context)

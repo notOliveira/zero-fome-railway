@@ -211,5 +211,8 @@ EMAIL_HOST_USER = 'contato.zerofome@gmail.com'
 EMAIL_HOST_PASSWORD = 'hxilkpqspvhwfmyw'
 
 # GOOGLE MAPS API
-# GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-GOOGLE_API_KEY = None
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") if os.getenv("GOOGLE_API_KEY") else None
+
+# HERE API
+HERE_API_KEY = os.getenv("HERE_API_KEY") if os.getenv("HERE_API_KEY") else None
+HERE_API_URL = os.getenv("HERE_API_URL") if os.getenv("HERE_API_URL") else None

@@ -13,6 +13,7 @@
 <script>
     let lat, lng;
     let locations = {{ locations|safe }};
+    console.log(locations);
 
     function initMap(userLat, userLng) {
         // Inicializa o mapa no Leaflet
